@@ -82,7 +82,7 @@ export default function Home() {
             value={playerInput}
             onChange={(e) => setPlayerInput(e.target.value)}
           />
-          <input type="submit" value={loading ? "..." : "Send"} disabled={loading}/>
+          <input type="submit" value={loading ? "..." : "Send"} disabled={loading || !playerInput || !playerInput.trim()}/>
         </form>
         <div className={styles.scroll}  style={{overflowY: "scroll", padding: "10px"}}>
           <div style={{
