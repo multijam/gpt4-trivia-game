@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./index.module.css";
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
@@ -30,8 +30,7 @@ export default function Home() {
   const [conversation, setConversation] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(event) {
-    event.preventDefault();
+  async function sendPlayerInput(playerInput) {
     setConversation([...conversation, { role: "user", content: playerInput }]);
     setPlayerInput("");
     try {
@@ -57,6 +56,15 @@ export default function Home() {
     }
   }
 
+  useEffect(() => {
+    sendPlayerInput("Let's begin the game.")
+  }, [])
+
+  async function onSubmit(event) {
+    event.preventDefault();
+    sendPlayerInput(playerInput);
+  }
+
   return (
     <div>
       <Head>
@@ -65,13 +73,11 @@ export default function Home() {
       </Head>
 
       <main className={styles.main}>
-        <h1>This AI is keeping secrets.</h1>
-        <h2>It's your job to guess them.</h2>
+        <h1>This AI is your poetry teacher.</h1>
+        <h2>They will grade you for completing their poem.</h2>
         { conversation.length < 1 ? (
           <>
-            <p>The daily secret codes are the same for everyone... sort of like Wordle. After you've solved them, you can ask the AI to make up more secret phrases.</p>
-            <p>Start by introducing yourself and asking for a hint.</p>
-            <p>{`(Note: for some reason the AI thinks it's a caveman)`}</p>
+            <p>Try to rhyme and to follow the poem's structure and theme!</p>
           </>
         ) : null }
         <form style={{transition: "bottom 1s", bottom: conversation.length < 1 ? "200px" : "0px"}}onSubmit={onSubmit}>

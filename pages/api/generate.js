@@ -1,5 +1,5 @@
 import { Configuration, OpenAIApi } from "openai";
-import {GAME_SYSTEM_PROMPT, GALAXY_BRAIN_SYSTEM_PROMPT, FUNNY_FILTER_SYSTEM_PROMPT} from "./constants.js"
+import {GAME_SYSTEM_PROMPT, /*GALAXY_BRAIN_SYSTEM_PROMPT, FUNNY_FILTER_SYSTEM_PROMPT*/} from "./constants.js"
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
@@ -23,7 +23,7 @@ export default async function (req, res) {
   if (playerInput.trim().length === 0) {
     res.status(400).json({
       error: {
-        message: "Please enter a valid animal",
+        message: "Please enter a response",
       }
     });
     return;
