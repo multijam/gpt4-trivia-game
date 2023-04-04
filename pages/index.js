@@ -67,10 +67,14 @@ export default function Home() {
       <main className={styles.main}>
         <h1>This AI is keeping secrets.</h1>
         <h2>It's your job to guess them.</h2>
-        <p>The daily secret codes are the same for everyone... sort of like Wordle. After you've solved them, you can ask the AI to make up more secret phrases.</p>
-        <p>Start by introducing yourself and asking for a hint.</p>
-        <p>{`(Note: for some reason the AI thinks it's a caveman)`}</p>
-        <form onSubmit={onSubmit}>
+        { conversation.length < 1 ? (
+          <>
+            <p>The daily secret codes are the same for everyone... sort of like Wordle. After you've solved them, you can ask the AI to make up more secret phrases.</p>
+            <p>Start by introducing yourself and asking for a hint.</p>
+            <p>{`(Note: for some reason the AI thinks it's a caveman)`}</p>
+          </>
+        ) : null }
+        <form style={{transition: "bottom 1s", bottom: conversation.length < 1 ? "200px" : "0px"}}onSubmit={onSubmit}>
           <input
             type="text"
             name="playerInput"
