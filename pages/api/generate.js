@@ -3,29 +3,28 @@ import {GAME_SYSTEM_PROMPT, GALAXY_BRAIN_SYSTEM_PROMPT, FUNNY_FILTER_SYSTEM_PROM
 import { initializeApp, cert, getApps } from "firebase-admin/app"
 import { getFirestore, Timestamp, FieldValue } from "firebase-admin/firestore"
 
-const serviceAccount = JSON.parse(
-  process.env.GOOGLE_SERVICE_ACCOUNT_KEY
-);
-
-console.warn("serviceAccount")
-console.warn(serviceAccount)
-
-if (getApps().length === 0) {
-  initializeApp({
-    credential: cert(serviceAccount)
-  });
-}
-
-const db = getFirestore();
-
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
-
-const conversation = []
-
 export default async function (req, res) {
+
+  const serviceAccount = JSON.parse(
+    process.env.GOOGLE_SERVICE_ACCOUNT_KEY
+  );
+  
+  console.warn("serviceAccount")
+  console.warn(serviceAccount)
+  
+  if (getApps().length === 0) {
+    initializeApp({
+      credential: cert(serviceAccount)
+    });
+  }
+  
+  const db = getFirestore();
+  
+  const configuration = new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+  const openai = new OpenAIApi(configuration);
+
   if (!configuration.apiKey) {
     res.status(500).json({
       error: {
@@ -47,17 +46,20 @@ export default async function (req, res) {
 
   const sessionsRef = db.collection('sessions');
   const snapshot = await sessionsRef.where('userID', '==', userID).get();
+  
+  let conversation = [];
 
   let sessionDocRef;
-  if (!snapshot.exists) {
+  if (snapshot.empty) {
     const data = {
       userID: userID,
       conversation: [],
     }
     sessionDocRef = db.collection('sessions').doc(crypto.randomUUID());
-    const res = await sessionDocRef.set(data);
+    await sessionDocRef.set(data);
   } else {
     sessionDocRef = snapshot.docs[0].ref
+    conversation = snapshot.docs[0].data().conversation
   }
 
   const playerInput = req.body.playerInput || '';
@@ -88,9 +90,8 @@ export default async function (req, res) {
       temperature: 0.6,
     });
     let newAnswer = completion.data.choices[0].message
-    conversation.push(newAnswer)
+    
     res.status(200).json({ result: completion.data });
-
     // update the conversation in firebase
     sessionDocRef.update({
       conversation: FieldValue.arrayUnion(newUserInput, newAnswer)
