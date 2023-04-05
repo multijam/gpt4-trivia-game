@@ -1,36 +1,64 @@
 import Head from "next/head";
-import { useState } from "react";
-import styles from "./index.module.css";
+import React, { useState, useEffect } from "react";
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { initializeApp  } from "firebase/app";
+import { doc, onSnapshot, getFirestore, collection, query, where, getDocs } from "firebase/firestore";
+
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
-if (typeof window !== "undefined" ){
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyBvybCWxyE5kjRICsxXsyykK6Xnx8IVKw8",
-    authDomain: "turing-test-37976.firebaseapp.com",
-    projectId: "turing-test-37976",
-    storageBucket: "turing-test-37976.appspot.com",
-    messagingSenderId: "109122874976",
-    appId: "1:109122874976:web:1c9edab030111348db1d05",
-    measurementId: "G-Q9VVES0Q31"
-  };
+import {saveToStorage, getFromStorage} from "../helpers/localStorage";
+import styles from "./index.module.css";
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
+function setupFirestore() {
+  if (typeof window !== "undefined" ){
+    // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      const firebaseConfig = {
+        apiKey: "AIzaSyBvybCWxyE5kjRICsxXsyykK6Xnx8IVKw8",
+        authDomain: "turing-test-37976.firebaseapp.com",
+        projectId: "turing-test-37976",
+        storageBucket: "turing-test-37976.appspot.com",
+        messagingSenderId: "109122874976",
+        appId: "1:109122874976:web:1c9edab030111348db1d05",
+        measurementId: "G-Q9VVES0Q31"
+      };
+    
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      return db
+    }
 }
 
 export default function Home() {
   const [playerInput, setPlayerInput] = useState("");
   const [conversation, setConversation] = useState([]);
   const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    let db = setupFirestore()
+    let userID = getFromStorage("userID");
+    if (!userID) {
+      userID = crypto.randomUUID();
+      saveToStorage("userID", userID);
+    } else {
+      const querySnapshot = async function() {
+        return await getDocs(query(collection(db, "sessions"), where("userID", "==", userID)));
+      }
+      querySnapshot().then((sessions) => {
+        console.log(sessions)
+        if (sessions.size > 0) {
+          setConversation(sessions.docs[0].data().conversation);
+        }
+      })
+    }
+    // const unsub = onSnapshot(doc(db, "sessions", "SF"), (doc) => {
+    //     console.log("Current data: ", doc.data());
+    // });
+    // return unsub
+  }, []);
 
-  async function onSubmit(event) {
+  const onSubmit = async (event) => {
     event.preventDefault();
     setConversation([...conversation, { role: "user", content: playerInput }]);
     setPlayerInput("");
@@ -41,7 +69,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ playerInput: playerInput }),
+        body: JSON.stringify({ playerInput: playerInput, userID: getFromStorage("userID") }),
       });
       const data = await response.json();
       if (response.status !== 200) {

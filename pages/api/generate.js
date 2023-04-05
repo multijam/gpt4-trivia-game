@@ -1,5 +1,17 @@
 import { Configuration, OpenAIApi } from "openai";
 import {GAME_SYSTEM_PROMPT, GALAXY_BRAIN_SYSTEM_PROMPT, FUNNY_FILTER_SYSTEM_PROMPT} from "./constants.js"
+import { initializeApp, cert, getApps } from "firebase-admin/app"
+import { getFirestore, Timestamp, FieldValue } from "firebase-admin/firestore"
+import serviceAccount from "../../firebaseServiceAccountKey.json"
+
+
+if (getApps().length === 0) {
+  initializeApp({
+    credential: cert(serviceAccount)
+  });
+}
+
+const db = getFirestore();
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
@@ -7,7 +19,6 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 const conversation = []
-const galaxyBrainConversation = []
 
 export default async function (req, res) {
   if (!configuration.apiKey) {
@@ -19,11 +30,36 @@ export default async function (req, res) {
     return;
   }
 
+  const userID = req.body.userID;
+  if (!userID) {
+    res.status(400).json({
+      error: {
+        message: "UserID required with request. This is a dev error, please let us know if you see this!",
+      }
+    });
+    return;
+  }
+
+  const sessionsRef = db.collection('sessions');
+  const snapshot = await sessionsRef.where('userID', '==', userID).get();
+
+  let sessionDocRef;
+  if (snapshot.empty) {
+    const data = {
+      userID: userID,
+      conversation: [],
+    }
+    sessionDocRef = db.collection('sessions').doc(crypto.randomUUID());
+    const res = await sessionDocRef.set(data);
+  } else {
+    sessionDocRef = snapshot.docs[0].ref
+  }
+
   const playerInput = req.body.playerInput || '';
   if (playerInput.trim().length === 0) {
     res.status(400).json({
       error: {
-        message: "Please enter a valid animal",
+        message: "Please enter a valid message",
       }
     });
     return;
@@ -48,53 +84,12 @@ export default async function (req, res) {
     });
     let newAnswer = completion.data.choices[0].message
     conversation.push(newAnswer)
-    galaxyBrainConversation.push({
-      role: "user",
-      content: `
-        human: ${newUserInput.content},
-        caveman: ${newAnswer.content}
-      `
-    })
     res.status(200).json({ result: completion.data });
-    // const commentary = await openai.createChatCompletion({
-    //   model: "gpt-4",
-    //   frequency_penalty: 1,
-    //   max_tokens: 256,
-    //   presence_penalty: 1,
-    //   stream: false,
-    //   temperature: 0.9,
-    //   top_p: .8,
-    //   messages: [
-    //     {role: "system", content: GALAXY_BRAIN_SYSTEM_PROMPT},
-    //     ...galaxyBrainConversation
-    //   ],
-    //   temperature: 0.6,
-    // });
-    // let commentaryItem = commentary.data.choices[0].message
-    // const funnyFilter = await openai.createChatCompletion({
-    //   model: "gpt-4",
-    //   frequency_penalty: 1,
-    //   max_tokens: 256,
-    //   presence_penalty: 1,
-    //   stream: false,
-    //   temperature: 0.6,
-    //   top_p: .8,
-    //   messages: [
-    //     {role: "system", content: FUNNY_FILTER_SYSTEM_PROMPT},
-    //     { role: "user",
-    //       content: `
-    //         human: ${newUserInput.content},
-    //         caveman: ${newAnswer.content},
-    //         comedian: ${commentaryItem.content},
-    //     `}
-    //   ],
-    //   temperature: 0.6,
-    // });
-    // galaxyBrainConversation.push(commentary.data.choices[0].message)
-    // console.log("funny?")
-    // console.log(funnyFilter.data.choices[0].message.content)
-    // console.log(galaxyBrainConversation.length)
-    // console.log(commentaryItem)
+
+    // update the conversation in firebase
+    sessionDocRef.update({
+      conversation: FieldValue.arrayUnion(newUserInput, newAnswer)
+    })
   } catch(error) {
     // Consider adjusting the error handling logic for your use case
     if (error.response) {
