@@ -2,9 +2,10 @@ import { Configuration, OpenAIApi } from "openai";
 import {GAME_SYSTEM_PROMPT, GALAXY_BRAIN_SYSTEM_PROMPT, FUNNY_FILTER_SYSTEM_PROMPT} from "./constants.js"
 import { initializeApp, cert, getApps } from "firebase-admin/app"
 import { getFirestore, Timestamp, FieldValue } from "firebase-admin/firestore"
-import serviceAccount from "../../firebaseServiceAccountKey.json"
 
-
+const serviceAccount = JSON.parse(
+  process.env.GOOGLE_SERVICE_ACCOUNT_KEY
+);
 if (getApps().length === 0) {
   initializeApp({
     credential: cert(serviceAccount)
