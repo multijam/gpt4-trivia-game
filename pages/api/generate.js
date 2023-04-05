@@ -45,7 +45,7 @@ export default async function (req, res) {
   const snapshot = await sessionsRef.where('userID', '==', userID).get();
 
   let sessionDocRef;
-  if (snapshot.empty) {
+  if (!snapshot.exists) {
     const data = {
       userID: userID,
       conversation: [],
