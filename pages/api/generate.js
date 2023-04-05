@@ -6,8 +6,10 @@ import { getFirestore, Timestamp, FieldValue } from "firebase-admin/firestore"
 const serviceAccount = JSON.parse(
   process.env.GOOGLE_SERVICE_ACCOUNT_KEY
 );
-console.log("serviceAccount")
-console.log(serviceAccount)
+
+console.warn("serviceAccount")
+console.warn(serviceAccount)
+
 if (getApps().length === 0) {
   initializeApp({
     credential: cert(serviceAccount)
