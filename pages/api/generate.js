@@ -9,9 +9,6 @@ export default async function (req, res) {
     process.env.GOOGLE_SERVICE_ACCOUNT_KEY
   );
   
-  console.warn("serviceAccount")
-  console.warn(serviceAccount)
-  
   if (getApps().length === 0) {
     initializeApp({
       credential: cert(serviceAccount)
