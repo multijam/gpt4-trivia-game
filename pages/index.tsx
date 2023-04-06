@@ -75,7 +75,9 @@ export default function Home() {
       if (response.status !== 200) {
         throw data.error || new Error(`Request failed with status ${response.status}`);
       }
-      setConversation([...conversation, { role: "user", content: playerInput }, data.result.choices[0].message]);
+      console.log("data.actions")
+      console.log(data.actions)
+      setConversation([...conversation, { role: "user", content: playerInput }, { role: "system", content: data.message }]);
       setLoading(false);
     } catch(error) {
       // Consider implementing your own error handling logic here
@@ -99,7 +101,6 @@ export default function Home() {
           <>
             <p>The daily secret codes are the same for everyone... sort of like Wordle. After you've solved them, you can ask the AI to make up more secret phrases.</p>
             <p>Start by introducing yourself and asking for a hint.</p>
-            <p>{`(Note: for some reason the AI thinks it's a caveman)`}</p>
           </>
         ) : null }
         <form style={{transition: "bottom 1s", bottom: conversation.length < 1 ? "200px" : "0px"}}onSubmit={onSubmit}>

@@ -52,6 +52,7 @@ export default async function (req, res) {
     const data = {
       userID: userID,
       conversation: [],
+      sanitizedConversation: [],
     }
     sessionDocRef = db.collection('sessions').doc(crypto.randomUUID());
     await sessionDocRef.set(data);
@@ -88,11 +89,14 @@ export default async function (req, res) {
       temperature: 0.6,
     });
     let newAnswer = completion.data.choices[0].message
-    
-    res.status(200).json({ result: completion.data });
+    const patternToMatchApiCalls = /\[\[.*?\]\]/g;
+    const calls = newAnswer.content.match(patternToMatchApiCalls)
+    const sanitizedAnswer = newAnswer.content.replace(patternToMatchApiCalls, '');
+    res.status(200).json({ message: sanitizedAnswer, actions: calls });
     // update the conversation in firebase
     sessionDocRef.update({
-      conversation: FieldValue.arrayUnion(newUserInput, newAnswer)
+      conversation: FieldValue.arrayUnion(newUserInput, newAnswer),
+      sanitizedAnswerConversation: FieldValue.arrayUnion(newUserInput, {role: "system", content: sanitizedAnswer})
     })
   } catch(error) {
     // Consider adjusting the error handling logic for your use case
